@@ -47,25 +47,34 @@ function handleKeyPress(event) {
 		// "cmd-z"
 		event.preventDefault();
 		undoLastLine();
+		renderScene();
 	}
-	if (event.keyCode === 76) {
+	if (event.keyCode === 76 && activeMode !== 'line') {
 		// "l"
 		event.preventDefault();
 		activeMode = 'line';
 		renderScene();
 	}
-	if (event.keyCode === 86) {
+	if (event.keyCode === 86 && activeMode !== 'select') {
 		// "v"
 		event.preventDefault();
 		activeMode = 'select';
 		renderScene();
 	}
+	if (event.keyCode === 68 && activeMode === 'select') {
+		// "d"
+		event.preventDefault();
+		removeSelected();
+		renderScene();
+	}
 }
 
 function undoLastLine() {
-	const undoAction = { type: 'undo' };
-	actionHistory = [...actionHistory, undoAction];
-	renderScene();
+	actionHistory = [...actionHistory, { type: 'undo' }];
+}
+
+function removeSelected() {
+	actionHistory = [...actionHistory, { type: 'delete' }];
 }
 
 function handleClickAt(x, y) {
@@ -201,6 +210,9 @@ function applyAction(prevActions, action) {
 		return prevActions.map(prev =>
 			prev.type === 'line' ? { ...prev, selected: false } : prev
 		);
+	}
+	if (action.type === 'delete') {
+		return prevActions.filter(prev => (prev.selected === true ? false : true));
 	}
 	return prevActions;
 }
