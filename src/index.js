@@ -76,16 +76,57 @@ function handleClickAt(x, y) {
 		return;
 	}
 	if (activeMode === 'select') {
-		// TODO: if there is a line at these coords, make it selected
-		currentScene = currentScene.map(line => (line.selected = false));
-		const selectedLine = currentScene.find(
-			({ x1, y1 }) => x1 === x && y1 === y
+		// Clear selected lines
+		actionHistory = [...actionHistory, { type: 'deselect-all' }];
+		// If there is a line at these coords, make it selected
+		const selectedLine = currentScene.find(line =>
+			doesPointTouchLine({ x, y }, line)
 		);
 		if (selectedLine) {
+			console.log('selectedLine', selectedLine);
 			selectedLine.selected = true;
+			actionHistory = [
+				...actionHistory,
+				{ type: 'select', selected: selectedLine },
+			];
+			renderScene();
 		}
-		renderScene();
 	}
+}
+
+function areLinesSame(line1, line2) {
+	return (
+		line1.x1 === line2.x1 &&
+		line1.x2 === line2.x2 &&
+		line1.y1 === line2.y1 &&
+		line1.y2 === line2.y2
+	);
+}
+
+function doesPointTouchLine({ x, y }, { x1, y1, x2, y2 }) {
+	console.log({ x, y }, { x1, y1, x2, y2 });
+	const t =
+		((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) /
+		((x2 - x1) ** 2 + (y2 - y1) ** 2);
+	console.log('t', t);
+	const footX = x1 + t * (x2 - x1);
+	const footY = y1 + t * (y2 - y1);
+	console.log('foot', footX, footY);
+	drawLine({
+		type: 'line',
+		x1: x,
+		y1: y,
+		x2: footX,
+		y2: footY,
+		color: 'orange',
+		width: 4,
+	});
+	const distanceToFoot = Math.sqrt((footX - x) ** 2 + (footY - y) ** 2);
+	console.log('distanceToFoot', distanceToFoot);
+	if (0 <= t && t <= 1 && distanceToFoot <= 10) {
+		return true;
+	}
+	return false;
 }
 
 function handleMoveMouseAt(x, y) {
@@ -137,6 +178,7 @@ function renderScene() {
 	clearCanvas();
 	drawGrid();
 	currentScene = actionHistory.reduce(applyAction, []).filter(x => x);
+	console.log('rendering scene', currentScene, 'from actions', actionHistory);
 	currentScene.map(renderAction);
 }
 
@@ -147,17 +189,28 @@ function applyAction(prevActions, action) {
 	if (action.type === 'undo') {
 		return prevActions.slice(0, prevActions.length - 1);
 	}
+	if (action.type === 'select') {
+		return prevActions.map(prev => {
+			if (prev.type === 'line' && areLinesSame(prev, action.selected)) {
+				return action.selected;
+			}
+			return prev;
+		});
+	}
+	if (action.type === 'deselect-all') {
+		return prevActions.map(prev =>
+			prev.type === 'line' ? { ...prev, selected: false } : prev
+		);
+	}
 	return prevActions;
 }
 
 function renderAction(action) {
-	drawLine(action);
-	if (activeMode === 'select') {
-		drawSelectMarker(action);
-	}
-	if (action.selected) {
+	if (activeMode === 'select' && action.selected) {
 		drawLine({ ...action, color: 'red', width: 5 });
+		return;
 	}
+	drawLine(action);
 }
 
 function clearCanvas() {
@@ -171,16 +224,6 @@ function drawLine({ x1, y1, x2, y2, color = 'black', width = 1 }) {
 	context.lineWidth = width;
 	context.moveTo(x1, y1);
 	context.lineTo(x2, y2);
-	context.stroke();
-}
-
-function drawSelectMarker({ x1, y1 }) {
-	const marker = new Path2D();
-	context.strokeStyle = 'black';
-	context.lineWidth = 5;
-	context.fillStyle = 'green';
-	marker.arc(x1, y1, 10, 0, 2 * Math.PI);
-	context.fill(marker);
 	context.stroke();
 }
 
