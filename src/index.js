@@ -171,7 +171,6 @@ function drawLine({ x1, y1, x2, y2, color = 'black', width = 1 }) {
 	context.lineWidth = width;
 	context.moveTo(x1, y1);
 	context.lineTo(x2, y2);
-	context.closePath();
 	context.stroke();
 }
 
