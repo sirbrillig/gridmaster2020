@@ -43,26 +43,23 @@ function handleKeyPress(event) {
 	if (isDrawing) {
 		return;
 	}
-	if (event.keyCode === 90 && event.metaKey) {
+	if (event.key === 'z' && event.metaKey) {
 		// "cmd-z"
 		event.preventDefault();
 		undoLastAction();
 		renderScene();
 	}
-	if (event.keyCode === 76 && activeMode !== 'line') {
-		// "l"
+	if (event.key === 'l' && activeMode !== 'line') {
 		event.preventDefault();
 		activeMode = 'line';
 		renderScene();
 	}
-	if (event.keyCode === 86 && activeMode !== 'select') {
-		// "v"
+	if (event.key === 'v' && activeMode !== 'select') {
 		event.preventDefault();
 		activeMode = 'select';
 		renderScene();
 	}
-	if (event.keyCode === 68 && activeMode === 'select') {
-		// "d"
+	if (event.key === 'Backspace' && activeMode === 'select') {
 		event.preventDefault();
 		removeSelected();
 		renderScene();
@@ -172,13 +169,20 @@ function renderScene() {
 	drawGrid();
 	const modifiedHistory = actionHistory.reduce(applyHistoryAction, []);
 	currentScene = modifiedHistory.reduce(applyAction, []).filter(x => x);
-	console.log('rendering scene', currentScene, 'from actions', modifiedHistory, 'and original actions', actionHistory);
+	console.log(
+		'rendering scene',
+		currentScene,
+		'from actions',
+		modifiedHistory,
+		'and original actions',
+		actionHistory
+	);
 	currentScene.map(renderAction);
 }
 
 function applyHistoryAction(prevActions, action) {
 	if (action.type === 'undo') {
-		console.log( 'undoing', prevActions[prevActions.length-1] );
+		console.log('undoing', prevActions[prevActions.length - 1]);
 		return prevActions.slice(0, prevActions.length - 1);
 	}
 	return [...prevActions, action];
@@ -194,9 +198,9 @@ function applyAction(prevActions, action) {
 				return prev;
 			}
 			if (areLinesSame(prev, action.selected)) {
-				return {...prev, selected: true};
+				return { ...prev, selected: true };
 			}
-			return {...prev, selected: false};
+			return { ...prev, selected: false };
 		});
 	}
 	if (action.type === 'delete') {
