@@ -10,6 +10,7 @@ let lineX = 0;
 let lineY = 0;
 let actionHistory = [];
 let activeMode = 'line';
+let previousMode = 'line';
 let currentScene = [];
 
 function getScrollOffsetLeft() {
@@ -48,21 +49,33 @@ function handleKeyPress(event) {
 		event.preventDefault();
 		undoLastAction();
 		renderScene();
+		return;
 	}
 	if (event.key === 'l' && activeMode !== 'line') {
 		event.preventDefault();
+		previousMode = activeMode;
 		activeMode = 'line';
 		renderScene();
+		return;
+	}
+	if (event.key === 'v' && activeMode === 'select') {
+		event.preventDefault();
+		activeMode = previousMode;
+		renderScene();
+		return;
 	}
 	if (event.key === 'v' && activeMode !== 'select') {
 		event.preventDefault();
+		previousMode = activeMode;
 		activeMode = 'select';
 		renderScene();
+		return;
 	}
 	if (event.key === 'Backspace' && activeMode === 'select') {
 		event.preventDefault();
 		removeSelected();
 		renderScene();
+		return;
 	}
 }
 
