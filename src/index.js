@@ -222,6 +222,11 @@ function applyAction(prevActions, action) {
 }
 
 function renderDrawCommand(drawCommand) {
+	if (activeMode === 'select' && ! drawCommand.selected) {
+		drawLine(drawCommand);
+		drawLine({ ...drawCommand, color: 'lightblue', width: 2 });
+		return;
+	}
 	if (activeMode === 'select' && drawCommand.selected) {
 		drawLine({ ...drawCommand, color: 'red', width: 5 });
 		return;
