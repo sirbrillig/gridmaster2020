@@ -167,7 +167,7 @@ function handleReleaseMouseAt(x, y) {
 function renderScene() {
 	clearCanvas();
 	drawGrid();
-	const modifiedHistory = actionHistory.reduce(applyHistoryAction, []);
+	const modifiedHistory = actionHistory.reduce(applyActionToActions, []);
 	currentScene = modifiedHistory.reduce(applyAction, []).filter(x => x);
 	console.log(
 		'rendering scene',
@@ -177,10 +177,16 @@ function renderScene() {
 		'and original actions',
 		actionHistory
 	);
-	currentScene.map(renderAction);
+	currentScene.map(renderDrawCommand);
 }
 
-function applyHistoryAction(prevActions, action) {
+/**
+ * Apply an action to create or modify the stack of actions
+ *
+ * This function is called as a reducer with a stack of actions. It should
+ * return a stack of actions for use by `applyAction`.
+ */
+function applyActionToActions(prevActions, action) {
 	if (action.type === 'undo') {
 		console.log('undoing', prevActions[prevActions.length - 1]);
 		return prevActions.slice(0, prevActions.length - 1);
@@ -188,6 +194,12 @@ function applyHistoryAction(prevActions, action) {
 	return [...prevActions, action];
 }
 
+/**
+ * Apply an action to create or modify the stack of draw commands
+ *
+ * This function is called as a reducer with a stack of actions. It should
+ * return a stack of draw commands for use by `renderDrawCommand`.
+ */
 function applyAction(prevActions, action) {
 	if (action.type === 'line') {
 		return [...prevActions, action];
@@ -209,12 +221,12 @@ function applyAction(prevActions, action) {
 	return prevActions;
 }
 
-function renderAction(action) {
-	if (activeMode === 'select' && action.selected) {
-		drawLine({ ...action, color: 'red', width: 5 });
+function renderDrawCommand(drawCommand) {
+	if (activeMode === 'select' && drawCommand.selected) {
+		drawLine({ ...drawCommand, color: 'red', width: 5 });
 		return;
 	}
-	drawLine(action);
+	drawLine(drawCommand);
 }
 
 function clearCanvas() {
