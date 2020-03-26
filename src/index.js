@@ -46,7 +46,7 @@ function handleKeyPress(event) {
 	if (event.keyCode === 90 && event.metaKey) {
 		// "cmd-z"
 		event.preventDefault();
-		undoLastLine();
+		undoLastAction();
 		renderScene();
 	}
 	if (event.keyCode === 76 && activeMode !== 'line') {
@@ -69,7 +69,7 @@ function handleKeyPress(event) {
 	}
 }
 
-function undoLastLine() {
+function undoLastAction() {
 	actionHistory = [...actionHistory, { type: 'undo' }];
 }
 
@@ -85,15 +85,12 @@ function handleClickAt(x, y) {
 		return;
 	}
 	if (activeMode === 'select') {
-		// Clear selected lines
-		actionHistory = [...actionHistory, { type: 'deselect-all' }];
 		// If there is a line at these coords, make it selected
 		const selectedLine = currentScene.find(line =>
 			doesPointTouchLine({ x, y }, line)
 		);
 		if (selectedLine) {
 			console.log('selectedLine', selectedLine);
-			selectedLine.selected = true;
 			actionHistory = [
 				...actionHistory,
 				{ type: 'select', selected: selectedLine },
@@ -113,25 +110,12 @@ function areLinesSame(line1, line2) {
 }
 
 function doesPointTouchLine({ x, y }, { x1, y1, x2, y2 }) {
-	console.log({ x, y }, { x1, y1, x2, y2 });
 	const t =
 		((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) /
 		((x2 - x1) ** 2 + (y2 - y1) ** 2);
-	console.log('t', t);
 	const footX = x1 + t * (x2 - x1);
 	const footY = y1 + t * (y2 - y1);
-	console.log('foot', footX, footY);
-	drawLine({
-		type: 'line',
-		x1: x,
-		y1: y,
-		x2: footX,
-		y2: footY,
-		color: 'orange',
-		width: 4,
-	});
 	const distanceToFoot = Math.sqrt((footX - x) ** 2 + (footY - y) ** 2);
-	console.log('distanceToFoot', distanceToFoot);
 	if (0 <= t && t <= 1 && distanceToFoot <= 10) {
 		return true;
 	}
@@ -186,30 +170,34 @@ function handleReleaseMouseAt(x, y) {
 function renderScene() {
 	clearCanvas();
 	drawGrid();
-	currentScene = actionHistory.reduce(applyAction, []).filter(x => x);
-	console.log('rendering scene', currentScene, 'from actions', actionHistory);
+	const modifiedHistory = actionHistory.reduce(applyHistoryAction, []);
+	currentScene = modifiedHistory.reduce(applyAction, []).filter(x => x);
+	console.log('rendering scene', currentScene, 'from actions', modifiedHistory, 'and original actions', actionHistory);
 	currentScene.map(renderAction);
+}
+
+function applyHistoryAction(prevActions, action) {
+	if (action.type === 'undo') {
+		console.log( 'undoing', prevActions[prevActions.length-1] );
+		return prevActions.slice(0, prevActions.length - 1);
+	}
+	return [...prevActions, action];
 }
 
 function applyAction(prevActions, action) {
 	if (action.type === 'line') {
 		return [...prevActions, action];
 	}
-	if (action.type === 'undo') {
-		return prevActions.slice(0, prevActions.length - 1);
-	}
 	if (action.type === 'select') {
 		return prevActions.map(prev => {
-			if (prev.type === 'line' && areLinesSame(prev, action.selected)) {
-				return action.selected;
+			if (prev.type !== 'line') {
+				return prev;
 			}
-			return prev;
+			if (areLinesSame(prev, action.selected)) {
+				return {...prev, selected: true};
+			}
+			return {...prev, selected: false};
 		});
-	}
-	if (action.type === 'deselect-all') {
-		return prevActions.map(prev =>
-			prev.type === 'line' ? { ...prev, selected: false } : prev
-		);
 	}
 	if (action.type === 'delete') {
 		return prevActions.filter(prev => (prev.selected === true ? false : true));
