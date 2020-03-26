@@ -96,18 +96,25 @@ function handleClickAt(x, y) {
 	}
 	if (activeMode === 'select') {
 		// If there is a line at these coords, make it selected
-		const selectedLine = currentScene.find(line =>
-			doesPointTouchLine({ x, y }, line)
+		const selectedShape = currentScene.find(shape =>
+			doesPointTouchShape({ x, y }, shape)
 		);
-		if (selectedLine) {
-			console.log('selectedLine', selectedLine);
+		if (selectedShape) {
+			console.log('selectedShape', selectedShape);
 			actionHistory = [
 				...actionHistory,
-				{ type: 'select', selected: selectedLine },
+				{ type: 'select', selected: selectedShape },
 			];
 			renderScene();
 		}
 	}
+}
+
+function areShapesSame(shape1, shape2) {
+	if (shape1.type === 'line' && shape2.type === 'line') {
+		return areLinesSame(shape1, shape2);
+	}
+	return false;
 }
 
 function areLinesSame(line1, line2) {
@@ -117,6 +124,13 @@ function areLinesSame(line1, line2) {
 		line1.y1 === line2.y1 &&
 		line1.y2 === line2.y2
 	);
+}
+
+function doesPointTouchShape(point, shape) {
+	if (shape.type === 'line') {
+		return doesPointTouchLine(point, shape);
+	}
+	return false;
 }
 
 function doesPointTouchLine({ x, y }, { x1, y1, x2, y2 }) {
@@ -136,18 +150,23 @@ function handleMoveMouseAt(x, y) {
 	if (!isDrawing) {
 		return;
 	}
-	const newLine = {
-		type: 'line',
-		x1: lineX,
-		y1: lineY,
-		x2: x,
-		y2: y,
-		color: 'green',
-		temporary: true,
-		width: 4,
-	};
-	actionHistory = [...actionHistory.filter(line => !line.temporary), newLine];
-	renderScene();
+	if (activeMode === 'line') {
+		const newLine = {
+			type: 'line',
+			x1: lineX,
+			y1: lineY,
+			x2: x,
+			y2: y,
+			color: 'green',
+			temporary: true,
+			width: 4,
+		};
+		actionHistory = [
+			...actionHistory.filter(action => !action.temporary),
+			newLine,
+		];
+		renderScene();
+	}
 }
 
 function handleCancelDraw() {
@@ -155,7 +174,7 @@ function handleCancelDraw() {
 		return;
 	}
 	isDrawing = false;
-	actionHistory = actionHistory.filter(line => !line.temporary);
+	actionHistory = actionHistory.filter(action => !action.temporary);
 	renderScene();
 }
 
@@ -163,18 +182,23 @@ function handleReleaseMouseAt(x, y) {
 	if (!isDrawing) {
 		return;
 	}
-	isDrawing = false;
-	const newLine = {
-		type: 'line',
-		x1: lineX,
-		y1: lineY,
-		x2: x,
-		y2: y,
-		color: 'black',
-		width: 3,
-	};
-	actionHistory = [...actionHistory.filter(line => !line.temporary), newLine];
-	renderScene();
+	if (activeMode === 'line') {
+		isDrawing = false;
+		const newLine = {
+			type: 'line',
+			x1: lineX,
+			y1: lineY,
+			x2: x,
+			y2: y,
+			color: 'black',
+			width: 3,
+		};
+		actionHistory = [
+			...actionHistory.filter(action => !action.temporary),
+			newLine,
+		];
+		renderScene();
+	}
 }
 
 function renderScene() {
@@ -213,43 +237,52 @@ function applyActionToActions(prevActions, action) {
  * This function is called as a reducer with a stack of actions. It should
  * return a stack of draw commands for use by `renderDrawCommand`.
  */
-function applyAction(prevActions, action) {
+function applyAction(drawCommands, action) {
 	if (action.type === 'line') {
-		return [...prevActions, action];
+		return [...drawCommands, action];
 	}
 	if (action.type === 'select') {
-		return prevActions.map(prev => {
-			if (prev.type !== 'line') {
-				return prev;
-			}
-			if (areLinesSame(prev, action.selected)) {
+		return drawCommands.map(prev => {
+			if (areShapesSame(prev, action.selected)) {
 				return { ...prev, selected: true };
 			}
 			return { ...prev, selected: false };
 		});
 	}
 	if (action.type === 'delete') {
-		return prevActions.filter(prev => (prev.selected === true ? false : true));
+		return drawCommands.filter(prev => (prev.selected === true ? false : true));
 	}
-	return prevActions;
+	return drawCommands;
 }
 
 function renderDrawCommand(drawCommand) {
-	if (activeMode === 'select' && ! drawCommand.selected) {
-		drawLine(drawCommand);
-		drawLine({ ...drawCommand, color: 'lightblue', width: 2 });
+	if (activeMode === 'select' && !drawCommand.selected) {
+		drawShape(drawCommand, { isSelectable: true });
 		return;
 	}
 	if (activeMode === 'select' && drawCommand.selected) {
-		drawLine({ ...drawCommand, color: 'red', width: 5 });
+		drawShape(
+			{ ...drawCommand, color: 'red', width: 5 },
+			{ isSelectable: false }
+		);
 		return;
 	}
-	drawLine(drawCommand);
+	drawShape(drawCommand, { isSelectable: false });
 }
 
 function clearCanvas() {
 	context.fillStyle = 'white';
 	context.fillRect(0, 0, main.width, main.height);
+}
+
+function drawShape(shape, { isSelectable } = {}) {
+	if (shape.type === 'line') {
+		drawLine(shape);
+		if (isSelectable) {
+			drawLine({ ...shape, color: 'lightblue', width: 2 });
+		}
+		return;
+	}
 }
 
 function drawLine({ x1, y1, x2, y2, color = 'black', width = 1 }) {
