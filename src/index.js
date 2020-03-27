@@ -120,9 +120,27 @@ function handleClickAt(x, y) {
 		selectedShape &&
 		doesPointTouchShape({ x, y }, selectedShape)
 	) {
-		// Move selected shape
+		handleStartMoveShape({ x, y, type: selectedShape.type });
+	}
+	if (activeMode === 'select') {
+		// If there is a line at these coords, make it selected
+		const touchedShape = currentScene.find(shape =>
+			doesPointTouchShape({ x, y }, shape)
+		);
+		if (touchedShape) {
+			addAction({ type: 'select', selected: touchedShape });
+			handleStartMoveShape({ x, y, type: touchedShape.type });
+			renderScene();
+		}
+		return;
+	}
+}
+
+function handleStartMoveShape({ x, y, type }) {
+	// Move selected shape
+	// TODO: generalize to other shapes
+	if (type === 'token') {
 		isDrawing = true;
-		// TODO: generalize to other shapes
 		addAction({
 			type: 'token',
 			x,
@@ -132,17 +150,6 @@ function handleClickAt(x, y) {
 			temporary: true,
 		});
 		renderScene();
-		return;
-	}
-	if (activeMode === 'select') {
-		// If there is a line at these coords, make it selected
-		const touchedShape = currentScene.find(shape =>
-			doesPointTouchShape({ x, y }, shape)
-		);
-		if (touchedShape) {
-			addAction({ type: 'select', selected: touchedShape });
-			renderScene();
-		}
 		return;
 	}
 }
