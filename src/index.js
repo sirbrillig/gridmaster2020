@@ -87,11 +87,11 @@ function handleKeyPress(event) {
 }
 
 function undoLastAction() {
-	actionHistory = [...actionHistory, { type: 'undo' }];
+	addAction({ type: 'undo' });
 }
 
 function removeSelected() {
-	actionHistory = [...actionHistory, { type: 'delete' }];
+	addAction({ type: 'delete' });
 }
 
 function handleClickAt(x, y) {
@@ -103,10 +103,14 @@ function handleClickAt(x, y) {
 	}
 	if (activeMode === 'token') {
 		isDrawing = true;
-		actionHistory = [
-			...actionHistory,
-			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
-		];
+		addAction({
+			type: 'token',
+			x,
+			y,
+			radius: 30,
+			color: 'green',
+			temporary: true,
+		});
 		renderScene();
 		return;
 	}
@@ -119,11 +123,14 @@ function handleClickAt(x, y) {
 		// Move selected shape
 		isDrawing = true;
 		// TODO: generalize to other shapes
-		actionHistory = [
-			...actionHistory,
-			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
-		];
-		// TODO: somehow remove original shape
+		addAction({
+			type: 'token',
+			x,
+			y,
+			radius: 30,
+			color: 'green',
+			temporary: true,
+		});
 		renderScene();
 		return;
 	}
@@ -133,13 +140,8 @@ function handleClickAt(x, y) {
 			doesPointTouchShape({ x, y }, shape)
 		);
 		if (touchedShape) {
-			actionHistory = [
-				...actionHistory,
-				{ type: 'select', selected: touchedShape },
-			];
+			addAction({ type: 'select', selected: touchedShape });
 			renderScene();
-			// Re-run handleClickAt so you can click and drag
-			handleClickAt(x, y);
 		}
 		return;
 	}
@@ -216,28 +218,33 @@ function handleMoveMouseAt(x, y) {
 			temporary: true,
 			width: 4,
 		};
-		actionHistory = [
-			...actionHistory.filter(action => !action.temporary),
-			newLine,
-		];
+		addAction(newLine);
 		renderScene();
 		return;
 	}
 	if (activeMode === 'token') {
-		actionHistory = [
-			...actionHistory.filter(action => !action.temporary),
-			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
-		];
+		addAction({
+			type: 'token',
+			x,
+			y,
+			radius: 30,
+			color: 'green',
+			temporary: true,
+		});
 		renderScene();
 		return;
 	}
 	const selectedShape = currentScene.find(shape => shape.selected);
 	if (activeMode === 'select' && selectedShape) {
 		// TODO: generalize to other shapes
-		actionHistory = [
-			...actionHistory.filter(action => !action.temporary),
-			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
-		];
+		addAction({
+			type: 'token',
+			x,
+			y,
+			radius: 30,
+			color: 'green',
+			temporary: true,
+		});
 		renderScene();
 		return;
 	}
@@ -267,29 +274,20 @@ function handleReleaseMouseAt(x, y) {
 			color: 'black',
 			width: 3,
 		};
-		actionHistory = [
-			...actionHistory.filter(action => !action.temporary),
-			newLine,
-		];
+		addAction(newLine);
 		renderScene();
 		return;
 	}
 	if (activeMode === 'token') {
 		isDrawing = false;
-		actionHistory = [
-			...actionHistory.filter(action => !action.temporary),
-			{ type: 'token', x, y, radius: 30, color: 'black' },
-		];
+		addAction({ type: 'token', x, y, radius: 30, color: 'black' });
 		renderScene();
 		return;
 	}
 	const selectedShape = currentScene.find(shape => shape.selected);
 	if (activeMode === 'select' && selectedShape) {
 		isDrawing = false;
-		actionHistory = [
-			...actionHistory.filter( action => !action.temporary ),
-			{ type: 'token', x, y, radius: 30, color: 'black' },
-		];
+		addAction({ type: 'token', x, y, radius: 30, color: 'black' });
 		renderScene();
 		return;
 	}
@@ -346,6 +344,13 @@ function applyAction(drawCommands, action) {
 		return drawCommands.filter(prev => (prev.selected === true ? false : true));
 	}
 	return drawCommands;
+}
+
+function addAction(action) {
+	actionHistory = [
+		...actionHistory.filter(action => !action.temporary),
+		action,
+	];
 }
 
 function renderDrawCommand(drawCommand) {
