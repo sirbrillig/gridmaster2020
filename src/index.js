@@ -51,6 +51,13 @@ function handleKeyPress(event) {
 		renderScene();
 		return;
 	}
+	if (event.key === 't' && activeMode !== 'token') {
+		event.preventDefault();
+		previousMode = activeMode;
+		activeMode = 'token';
+		renderScene();
+		return;
+	}
 	if (event.key === 'l' && activeMode !== 'line') {
 		event.preventDefault();
 		previousMode = activeMode;
@@ -94,6 +101,14 @@ function handleClickAt(x, y) {
 		lineY = y;
 		return;
 	}
+	if (activeMode === 'token') {
+		actionHistory = [
+			...actionHistory,
+			{ type: 'token', x, y, radius: 30, color: 'orange' },
+		];
+		renderScene();
+		return;
+	}
 	if (activeMode === 'select') {
 		// If there is a line at these coords, make it selected
 		const selectedShape = currentScene.find(shape =>
@@ -107,6 +122,7 @@ function handleClickAt(x, y) {
 			];
 			renderScene();
 		}
+		return;
 	}
 }
 
@@ -114,7 +130,18 @@ function areShapesSame(shape1, shape2) {
 	if (shape1.type === 'line' && shape2.type === 'line') {
 		return areLinesSame(shape1, shape2);
 	}
+	if (shape1.type === 'token' && shape2.type === 'token') {
+		return areCirclesSame(shape1, shape2);
+	}
 	return false;
+}
+
+function areCirclesSame(circle1, circle2) {
+	return (
+		circle1.x === circle2.x &&
+		circle1.y === circle2.y &&
+		circle1.radius === circle2.radius
+	);
 }
 
 function areLinesSame(line1, line2) {
@@ -130,7 +157,14 @@ function doesPointTouchShape(point, shape) {
 	if (shape.type === 'line') {
 		return doesPointTouchLine(point, shape);
 	}
+	if (shape.type === 'token') {
+		return doesPointTouchCircle(point, shape);
+	}
 	return false;
+}
+
+function doesPointTouchCircle({ x, y }, { x: circleX, y: circleY, radius }) {
+	return (x - circleX) ** 2 + (y - circleY) ** 2 < radius ** 2;
 }
 
 function doesPointTouchLine({ x, y }, { x1, y1, x2, y2 }) {
@@ -240,7 +274,7 @@ function applyActionToActions(prevActions, action) {
  * return a stack of draw commands for use by `renderDrawCommand`.
  */
 function applyAction(drawCommands, action) {
-	if (action.type === 'line') {
+	if (action.type === 'line' || action.type === 'token') {
 		return [...drawCommands, action];
 	}
 	if (action.type === 'select') {
@@ -258,18 +292,14 @@ function applyAction(drawCommands, action) {
 }
 
 function renderDrawCommand(drawCommand) {
-	if (activeMode === 'select' && !drawCommand.selected) {
-		drawShape(drawCommand, { isSelectable: true });
-		return;
-	}
 	if (activeMode === 'select' && drawCommand.selected) {
-		drawShape(
-			{ ...drawCommand, color: 'red', width: 5 },
-			{ isSelectable: false }
-		);
+		drawShape(drawCommand, { isSelectable: false, isSelected: true });
 		return;
 	}
-	drawShape(drawCommand, { isSelectable: false });
+	drawShape(drawCommand, {
+		isSelectable: activeMode === 'select',
+		isSelected: false,
+	});
 }
 
 function clearCanvas() {
@@ -277,14 +307,28 @@ function clearCanvas() {
 	context.fillRect(0, 0, main.width, main.height);
 }
 
-function drawShape(shape, { isSelectable } = {}) {
+function drawShape(shape, { isSelectable, isSelected } = {}) {
 	if (shape.type === 'line') {
-		drawLine(shape);
+		drawLine(isSelected ? { ...shape, color: 'red', width: 5 } : shape);
 		if (isSelectable) {
 			drawLine({ ...shape, color: 'lightblue', width: 2 });
 		}
 		return;
 	}
+	if (shape.type === 'token') {
+		drawCircle(isSelected ? { ...shape, color: 'red' } : shape);
+		if (isSelectable) {
+			drawCircle({ ...shape, color: 'lightblue', radius: 5 });
+		}
+		return;
+	}
+}
+
+function drawCircle({ x, y, radius, color = 'black' }) {
+	context.beginPath();
+	context.arc(x, y, radius, 0, Math.PI * 2);
+	context.fillStyle = color;
+	context.fill();
 }
 
 function drawLine({ x1, y1, x2, y2, color = 'black', width = 1 }) {
