@@ -6,6 +6,7 @@ app.appendChild(main);
 
 const context = main.getContext('2d');
 let isDrawing = false;
+let selectedShape = null;
 let lineX = 0;
 let lineY = 0;
 let actionHistory = [];
@@ -40,6 +41,13 @@ function getMouseCoordsInCanvas(event) {
 	];
 }
 
+function changeModeTo(mode) {
+	console.log('changing mode from', activeMode, 'to', mode);
+	previousMode = activeMode;
+	activeMode = mode;
+	selectedShape = null;
+}
+
 function handleKeyPress(event) {
 	if (isDrawing) {
 		return;
@@ -53,28 +61,25 @@ function handleKeyPress(event) {
 	}
 	if (event.key === 't' && activeMode !== 'token') {
 		event.preventDefault();
-		previousMode = activeMode;
-		activeMode = 'token';
+		changeModeTo('token');
 		renderScene();
 		return;
 	}
 	if (event.key === 'l' && activeMode !== 'line') {
 		event.preventDefault();
-		previousMode = activeMode;
-		activeMode = 'line';
+		changeModeTo('line');
 		renderScene();
 		return;
 	}
 	if (event.key === 'v' && activeMode === 'select') {
 		event.preventDefault();
-		activeMode = previousMode;
+		changeModeTo(previousMode);
 		renderScene();
 		return;
 	}
 	if (event.key === 'v' && activeMode !== 'select') {
 		event.preventDefault();
-		previousMode = activeMode;
-		activeMode = 'select';
+		changeModeTo('select');
 		renderScene();
 		return;
 	}
@@ -87,15 +92,19 @@ function handleKeyPress(event) {
 }
 
 function undoLastAction() {
+	console.log('undoing action');
 	addAction({ type: 'undo' });
 }
 
 function removeSelected() {
+	console.log('removing selected shape');
 	addAction({ type: 'delete' });
 }
 
 function handleClickAt(x, y) {
+	console.log('heard click at', x, y);
 	if (activeMode === 'line') {
+		console.log('starting line');
 		isDrawing = true;
 		lineX = x;
 		lineY = y;
@@ -103,6 +112,7 @@ function handleClickAt(x, y) {
 	}
 	if (activeMode === 'token') {
 		isDrawing = true;
+		console.log('creating token');
 		addAction({
 			type: 'token',
 			x,
@@ -114,13 +124,13 @@ function handleClickAt(x, y) {
 		renderScene();
 		return;
 	}
-	const selectedShape = currentScene.find(shape => shape.selected);
 	if (
 		activeMode === 'select' &&
 		selectedShape &&
 		doesPointTouchShape({ x, y }, selectedShape)
 	) {
-		handleStartMoveShape({ x, y, type: selectedShape.type });
+		handleStartMoveShape(x, y, selectedShape);
+		return;
 	}
 	if (activeMode === 'select') {
 		// If there is a line at these coords, make it selected
@@ -128,20 +138,24 @@ function handleClickAt(x, y) {
 			doesPointTouchShape({ x, y }, shape)
 		);
 		if (touchedShape) {
+			selectedShape = touchedShape;
+			console.log('selecting shape', touchedShape);
 			addAction({ type: 'select', selected: touchedShape });
 			// TODO: do this only if we do not release immediately
-			handleStartMoveShape({ x, y, type: touchedShape.type });
+			// handleStartMoveShape(x, y, touchedShape);
 			renderScene();
 		}
 		return;
 	}
 }
 
-function handleStartMoveShape({ x, y, type }) {
+function handleStartMoveShape(x, y, shape) {
 	// Move selected shape
 	// TODO: generalize to other shapes
-	if (type === 'token') {
+	if (shape.type === 'token') {
+		console.log('moving shape');
 		isDrawing = true;
+		removeSelected();
 		addAction({
 			type: 'token',
 			x,
@@ -150,7 +164,6 @@ function handleStartMoveShape({ x, y, type }) {
 			color: 'green',
 			temporary: true,
 		});
-		// TODO: somehow remove original shape
 		renderScene();
 		return;
 	}
@@ -243,7 +256,6 @@ function handleMoveMouseAt(x, y) {
 		renderScene();
 		return;
 	}
-	const selectedShape = currentScene.find(shape => shape.selected);
 	if (activeMode === 'select' && selectedShape) {
 		// TODO: generalize to other shapes
 		addAction({
@@ -263,6 +275,7 @@ function handleCancelDraw() {
 	if (!isDrawing) {
 		return;
 	}
+	console.log('cancelling draw');
 	isDrawing = false;
 	actionHistory = actionHistory.filter(action => !action.temporary);
 	renderScene();
@@ -283,19 +296,21 @@ function handleReleaseMouseAt(x, y) {
 			color: 'black',
 			width: 3,
 		};
+		console.log('finishing line');
 		addAction(newLine);
 		renderScene();
 		return;
 	}
 	if (activeMode === 'token') {
 		isDrawing = false;
+		console.log('finishing token');
 		addAction({ type: 'token', x, y, radius: 30, color: 'black' });
 		renderScene();
 		return;
 	}
-	const selectedShape = currentScene.find(shape => shape.selected);
 	if (activeMode === 'select' && selectedShape) {
 		isDrawing = false;
+		console.log('finishing token move');
 		addAction({ type: 'token', x, y, radius: 30, color: 'black' });
 		renderScene();
 		return;
@@ -356,6 +371,7 @@ function applyAction(drawCommands, action) {
 }
 
 function addAction(action) {
+	console.log('adding action', action);
 	actionHistory = [
 		...actionHistory.filter(action => !action.temporary),
 		action,
@@ -389,7 +405,7 @@ function drawShape(shape, { isSelectable } = {}) {
 	}
 	if (shape.type === 'token') {
 		if (isSelectable) {
-			drawCircle({ ...shape, transparency: 0.3});
+			drawCircle({ ...shape, transparency: 0.3 });
 			return;
 		}
 		drawCircle(shape);
@@ -398,16 +414,24 @@ function drawShape(shape, { isSelectable } = {}) {
 }
 
 function drawCircle({ x, y, radius, color = 'black', transparency = 1 }) {
-	context.save()
+	context.save();
 	context.beginPath();
 	context.arc(x, y, radius, 0, Math.PI * 2);
 	context.fillStyle = color;
 	context.globalAlpha = transparency;
 	context.fill();
-	context.restore()
+	context.restore();
 }
 
-function drawLine({ x1, y1, x2, y2, color = 'black', width = 1, transparency = 1 }) {
+function drawLine({
+	x1,
+	y1,
+	x2,
+	y2,
+	color = 'black',
+	width = 1,
+	transparency = 1,
+}) {
 	context.save();
 	context.beginPath();
 	context.strokeStyle = color;
