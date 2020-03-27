@@ -140,6 +140,8 @@ function doesPointTouchLine({ x, y }, { x1, y1, x2, y2 }) {
 	const footX = x1 + t * (x2 - x1);
 	const footY = y1 + t * (y2 - y1);
 	const distanceToFoot = Math.sqrt((footX - x) ** 2 + (footY - y) ** 2);
+	// Uncomment this to view the foot
+	// drawLine({x1: x, y1: y, x2: footX, y2: footY, color: 'orange', width: 3});
 	if (0 <= t && t <= 1 && distanceToFoot <= 10) {
 		return true;
 	}
