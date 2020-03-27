@@ -102,9 +102,10 @@ function handleClickAt(x, y) {
 		return;
 	}
 	if (activeMode === 'token') {
+		isDrawing = true;
 		actionHistory = [
 			...actionHistory,
-			{ type: 'token', x, y, radius: 30, color: 'orange' },
+			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
 		];
 		renderScene();
 		return;
@@ -202,6 +203,15 @@ function handleMoveMouseAt(x, y) {
 			newLine,
 		];
 		renderScene();
+		return;
+	}
+	if (activeMode === 'token') {
+		actionHistory = [
+			...actionHistory.filter(action => !action.temporary),
+			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
+		];
+		renderScene();
+		return;
 	}
 }
 
@@ -234,6 +244,16 @@ function handleReleaseMouseAt(x, y) {
 			newLine,
 		];
 		renderScene();
+		return;
+	}
+	if (activeMode === 'token') {
+		isDrawing = false;
+		actionHistory = [
+			...actionHistory.filter(action => !action.temporary),
+			{ type: 'token', x, y, radius: 30, color: 'black' },
+		];
+		renderScene();
+		return;
 	}
 }
 
