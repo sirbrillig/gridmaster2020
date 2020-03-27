@@ -376,37 +376,45 @@ function clearCanvas() {
 	context.fillRect(0, 0, main.width, main.height);
 }
 
-function drawShape(shape, { isSelectable, isSelected } = {}) {
+function drawShape(shape, { isSelectable } = {}) {
 	if (shape.type === 'line') {
-		drawLine(isSelected ? { ...shape, color: 'red', width: 5 } : shape);
 		if (isSelectable) {
-			drawLine({ ...shape, color: 'lightblue', width: 2 });
+			drawLine({ ...shape, transparency: 0.3 });
+			return;
 		}
+		drawLine(shape);
 		return;
 	}
 	if (shape.type === 'token') {
-		drawCircle(isSelected ? { ...shape, color: 'red' } : shape);
 		if (isSelectable) {
-			drawCircle({ ...shape, color: 'lightblue', radius: 5 });
+			drawCircle({ ...shape, transparency: 0.3});
+			return;
 		}
+		drawCircle(shape);
 		return;
 	}
 }
 
-function drawCircle({ x, y, radius, color = 'black' }) {
+function drawCircle({ x, y, radius, color = 'black', transparency = 1 }) {
+	context.save()
 	context.beginPath();
 	context.arc(x, y, radius, 0, Math.PI * 2);
 	context.fillStyle = color;
+	context.globalAlpha = transparency;
 	context.fill();
+	context.restore()
 }
 
-function drawLine({ x1, y1, x2, y2, color = 'black', width = 1 }) {
+function drawLine({ x1, y1, x2, y2, color = 'black', width = 1, transparency = 1 }) {
+	context.save();
 	context.beginPath();
 	context.strokeStyle = color;
 	context.lineWidth = width;
+	context.globalAlpha = transparency;
 	context.moveTo(x1, y1);
 	context.lineTo(x2, y2);
 	context.stroke();
+	context.restore();
 }
 
 function drawGrid() {
