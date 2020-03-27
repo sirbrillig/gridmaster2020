@@ -110,18 +110,36 @@ function handleClickAt(x, y) {
 		renderScene();
 		return;
 	}
+	const selectedShape = currentScene.find(shape => shape.selected);
+	if (
+		activeMode === 'select' &&
+		selectedShape &&
+		doesPointTouchShape({ x, y }, selectedShape)
+	) {
+		// Move selected shape
+		isDrawing = true;
+		// TODO: generalize to other shapes
+		actionHistory = [
+			...actionHistory,
+			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
+		];
+		// TODO: somehow remove original shape
+		renderScene();
+		return;
+	}
 	if (activeMode === 'select') {
 		// If there is a line at these coords, make it selected
-		const selectedShape = currentScene.find(shape =>
+		const touchedShape = currentScene.find(shape =>
 			doesPointTouchShape({ x, y }, shape)
 		);
-		if (selectedShape) {
-			console.log('selectedShape', selectedShape);
+		if (touchedShape) {
 			actionHistory = [
 				...actionHistory,
-				{ type: 'select', selected: selectedShape },
+				{ type: 'select', selected: touchedShape },
 			];
 			renderScene();
+			// Re-run handleClickAt so you can click and drag
+			handleClickAt(x, y);
 		}
 		return;
 	}
@@ -213,6 +231,16 @@ function handleMoveMouseAt(x, y) {
 		renderScene();
 		return;
 	}
+	const selectedShape = currentScene.find(shape => shape.selected);
+	if (activeMode === 'select' && selectedShape) {
+		// TODO: generalize to other shapes
+		actionHistory = [
+			...actionHistory.filter(action => !action.temporary),
+			{ type: 'token', x, y, radius: 30, color: 'green', temporary: true },
+		];
+		renderScene();
+		return;
+	}
 }
 
 function handleCancelDraw() {
@@ -255,6 +283,16 @@ function handleReleaseMouseAt(x, y) {
 		renderScene();
 		return;
 	}
+	const selectedShape = currentScene.find(shape => shape.selected);
+	if (activeMode === 'select' && selectedShape) {
+		isDrawing = false;
+		actionHistory = [
+			...actionHistory.filter( action => !action.temporary ),
+			{ type: 'token', x, y, radius: 30, color: 'black' },
+		];
+		renderScene();
+		return;
+	}
 }
 
 function renderScene() {
@@ -281,7 +319,6 @@ function renderScene() {
  */
 function applyActionToActions(prevActions, action) {
 	if (action.type === 'undo') {
-		console.log('undoing', prevActions[prevActions.length - 1]);
 		return prevActions.slice(0, prevActions.length - 1);
 	}
 	return [...prevActions, action];
