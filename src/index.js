@@ -129,6 +129,7 @@ function handleClickAt(x, y) {
 		);
 		if (touchedShape) {
 			addAction({ type: 'select', selected: touchedShape });
+			// TODO: do this only if we do not release immediately
 			handleStartMoveShape({ x, y, type: touchedShape.type });
 			renderScene();
 		}
@@ -149,6 +150,7 @@ function handleStartMoveShape({ x, y, type }) {
 			color: 'green',
 			temporary: true,
 		});
+		// TODO: somehow remove original shape
 		renderScene();
 		return;
 	}
