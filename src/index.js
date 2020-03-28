@@ -98,8 +98,11 @@ function undoLastAction() {
 }
 
 function removeSelected() {
+	if (!selectedShape) {
+		return;
+	}
 	console.log('removing selected shape');
-	addAction({ type: 'delete' });
+	addAction({ type: 'delete', shape: selectedShape });
 }
 
 function handleClickAt(x, y) {
@@ -140,7 +143,6 @@ function handleClickAt(x, y) {
 		if (touchedShape) {
 			selectedShape = touchedShape;
 			console.log('selecting shape', touchedShape);
-			addAction({ type: 'select', selected: touchedShape });
 			// TODO: do this only if we do not release immediately
 			// handleStartMoveShape(x, y, touchedShape);
 			renderScene();
@@ -169,6 +171,9 @@ function handleStartMoveShape(x, y, shape) {
 }
 
 function areShapesSame(shape1, shape2) {
+	if (!shape1 || !shape2) {
+		return false;
+	}
 	if (shape1.type === 'line' && shape2.type === 'line') {
 		return areLinesSame(shape1, shape2);
 	}
@@ -366,16 +371,10 @@ function applyAction(drawCommands, action) {
 	if (action.type === 'line' || action.type === 'token') {
 		return [...drawCommands, action];
 	}
-	if (action.type === 'select') {
-		return drawCommands.map(prev => {
-			if (areShapesSame(prev, action.selected)) {
-				return { ...prev, selected: true };
-			}
-			return { ...prev, selected: false };
-		});
-	}
 	if (action.type === 'delete') {
-		return drawCommands.filter(prev => (prev.selected === true ? false : true));
+		return drawCommands.filter(prev =>
+			areShapesSame(prev, action.shape) ? false : true
+		);
 	}
 	return drawCommands;
 }
@@ -399,9 +398,8 @@ function clearTemporaryActions() {
 
 function renderDrawCommand(drawCommand) {
 	drawShape(drawCommand, {
-		isSelectable: activeMode === 'select' && !drawCommand.selected,
-		isSelected: drawCommand.selected,
 		isTemporary: drawCommand.temporary,
+		isSelected: areShapesSame(selectedShape, drawCommand),
 	});
 }
 
@@ -410,25 +408,21 @@ function clearCanvas() {
 	context.fillRect(0, 0, main.width, main.height);
 }
 
-function drawShape(shape, { isSelectable, isTemporary } = {}) {
+function drawShape(shape, { isTemporary, isSelected } = {}) {
 	if (shape.type === 'line') {
-		if (isSelectable) {
-			drawLine({
-				...shape,
-				transparency: 0.3,
-				dashed: isTemporary,
-			});
-			return;
-		}
-		drawLine({ ...shape, dashed: isTemporary });
+		drawLine({
+			...shape,
+			dashed: isTemporary,
+			...(isSelected && { color: 'green' }),
+		});
 		return;
 	}
 	if (shape.type === 'token') {
-		if (isSelectable) {
-			drawCircle({ ...shape, transparency: 0.3, dashed: isTemporary });
-			return;
-		}
-		drawCircle({ ...shape, dashed: isTemporary });
+		drawCircle({
+			...shape,
+			dashed: isTemporary,
+			...(isSelected && { color: 'green' }),
+		});
 		return;
 	}
 }
