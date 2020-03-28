@@ -119,7 +119,6 @@ function handleClickAt(x, y) {
 			x,
 			y,
 			radius: 30,
-			color: 'green',
 			temporary: true,
 		});
 		renderScene();
@@ -162,7 +161,6 @@ function handleStartMoveShape(x, y, shape) {
 			x,
 			y,
 			radius: 30,
-			color: 'green',
 			temporary: true,
 		});
 		renderScene();
@@ -248,7 +246,6 @@ function handleMoveMouseAt(x, y) {
 			x,
 			y,
 			radius: 30,
-			color: 'green',
 			temporary: true,
 		});
 		renderScene();
@@ -261,7 +258,6 @@ function handleMoveMouseAt(x, y) {
 			x,
 			y,
 			radius: 30,
-			color: 'green',
 			temporary: true,
 		});
 		renderScene();
@@ -417,30 +413,43 @@ function drawShape(shape, { isSelectable, isTemporary } = {}) {
 			drawLine({
 				...shape,
 				transparency: 0.3,
-				...(isTemporary && { dashed: true }),
+				dashed: isTemporary,
 			});
 			return;
 		}
-		drawLine({ ...shape, ...(isTemporary && { dashed: true }) });
+		drawLine({ ...shape, dashed: isTemporary });
 		return;
 	}
 	if (shape.type === 'token') {
 		if (isSelectable) {
-			drawCircle({ ...shape, transparency: 0.3 });
+			drawCircle({ ...shape, transparency: 0.3, dashed: isTemporary });
 			return;
 		}
-		drawCircle(shape);
+		drawCircle({ ...shape, dashed: isTemporary });
 		return;
 	}
 }
 
-function drawCircle({ x, y, radius, color = 'black', transparency = 1 }) {
+function drawCircle({
+	x,
+	y,
+	radius,
+	color = 'black',
+	transparency = 1,
+	dashed = false,
+}) {
 	context.save();
 	context.beginPath();
 	context.arc(x, y, radius, 0, Math.PI * 2);
+	context.setLineDash(dashed ? [10, 3] : []);
 	context.fillStyle = color;
+	context.strokeStyle = color;
 	context.globalAlpha = transparency;
-	context.fill();
+	if (dashed) {
+		context.stroke();
+	} else {
+		context.fill();
+	}
 	context.restore();
 }
 
