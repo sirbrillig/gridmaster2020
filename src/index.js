@@ -312,6 +312,9 @@ function handleReleaseMouseAt(x, y) {
 }
 
 function renderScene() {
+	setCursorTo(
+		activeMode === 'select' ? (isDrawing ? 'grabbing' : 'grab') : 'auto'
+	);
 	clearCanvas();
 	drawGrid();
 	const modifiedHistory = actionHistory.reduce(applyActionToActions, []);
@@ -495,6 +498,10 @@ function drawGrid() {
 		y1 += gridSpacing;
 		y2 = y1;
 	}
+}
+
+function setCursorTo(type) {
+	main.style.cursor = type;
 }
 
 function init() {
