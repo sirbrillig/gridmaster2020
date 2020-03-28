@@ -417,11 +417,11 @@ function drawShape(shape, { isSelectable, isTemporary } = {}) {
 			drawLine({
 				...shape,
 				transparency: 0.3,
-				...(isTemporary && { color: 'green' }),
+				...(isTemporary && { dashed: true }),
 			});
 			return;
 		}
-		drawLine({ ...shape, ...(isTemporary && { color: 'green' }) });
+		drawLine({ ...shape, ...(isTemporary && { dashed: true }) });
 		return;
 	}
 	if (shape.type === 'token') {
@@ -452,12 +452,14 @@ function drawLine({
 	color = 'black',
 	width = 1,
 	transparency = 1,
+	dashed = false,
 }) {
 	context.save();
 	context.beginPath();
 	context.strokeStyle = color;
 	context.lineWidth = width;
 	context.globalAlpha = transparency;
+	context.setLineDash(dashed ? [10, 3] : []);
 	context.moveTo(x1, y1);
 	context.lineTo(x2, y2);
 	context.stroke();
