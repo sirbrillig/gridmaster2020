@@ -10,6 +10,7 @@ let selectedShape = null;
 let lineX = 0;
 let lineY = 0;
 let actionHistory = [];
+let temporaryActionHistory = [];
 let activeMode = 'line';
 let previousMode = 'line';
 let currentScene = [];
@@ -230,17 +231,14 @@ function handleMoveMouseAt(x, y) {
 		return;
 	}
 	if (activeMode === 'line') {
-		const newLine = {
-			type: 'line',
+		addTemporaryAction({
+			type: 'drawing-line',
 			x1: lineX,
 			y1: lineY,
 			x2: x,
 			y2: y,
-			color: 'green',
-			temporary: true,
-			width: 4,
-		};
-		addAction(newLine);
+			width: 3,
+		});
 		renderScene();
 		return;
 	}
@@ -277,6 +275,7 @@ function handleCancelDraw() {
 	}
 	console.log('cancelling draw');
 	isDrawing = false;
+	clearTemporaryActions();
 	actionHistory = actionHistory.filter(action => !action.temporary);
 	renderScene();
 }
@@ -285,19 +284,18 @@ function handleReleaseMouseAt(x, y) {
 	if (!isDrawing) {
 		return;
 	}
+	clearTemporaryActions();
 	if (activeMode === 'line') {
 		isDrawing = false;
-		const newLine = {
-			type: 'line',
+		console.log('finishing line');
+		addAction({
+			type: 'finish-line',
 			x1: lineX,
 			y1: lineY,
 			x2: x,
 			y2: y,
-			color: 'black',
 			width: 3,
-		};
-		console.log('finishing line');
-		addAction(newLine);
+		});
 		renderScene();
 		return;
 	}
@@ -322,6 +320,9 @@ function renderScene() {
 	drawGrid();
 	const modifiedHistory = actionHistory.reduce(applyActionToActions, []);
 	currentScene = modifiedHistory.reduce(applyAction, []).filter(x => x);
+	const temporaryScene = temporaryActionHistory
+		.reduce(applyAction, [])
+		.filter(x => x);
 	console.log(
 		'rendering scene',
 		currentScene,
@@ -331,6 +332,7 @@ function renderScene() {
 		actionHistory
 	);
 	currentScene.map(renderDrawCommand);
+	temporaryScene.map(renderDrawCommand);
 }
 
 /**
@@ -353,6 +355,15 @@ function applyActionToActions(prevActions, action) {
  * return a stack of draw commands for use by `renderDrawCommand`.
  */
 function applyAction(drawCommands, action) {
+	if (action.type === 'drawing-line') {
+		return [
+			...drawCommands.filter(prev => !prev.temporary),
+			{ ...action, type: 'line', temporary: true },
+		];
+	}
+	if (action.type === 'finish-line') {
+		return [...drawCommands, { ...action, type: 'line' }];
+	}
 	if (action.type === 'line' || action.type === 'token') {
 		return [...drawCommands, action];
 	}
@@ -378,14 +389,20 @@ function addAction(action) {
 	];
 }
 
+function addTemporaryAction(action) {
+	console.log('adding temporary action', action);
+	temporaryActionHistory.push(action);
+}
+
+function clearTemporaryActions() {
+	temporaryActionHistory = [];
+}
+
 function renderDrawCommand(drawCommand) {
-	if (activeMode === 'select' && drawCommand.selected) {
-		drawShape(drawCommand, { isSelectable: false, isSelected: true });
-		return;
-	}
 	drawShape(drawCommand, {
-		isSelectable: activeMode === 'select',
-		isSelected: false,
+		isSelectable: activeMode === 'select' && !drawCommand.selected,
+		isSelected: drawCommand.selected,
+		isTemporary: drawCommand.temporary,
 	});
 }
 
@@ -394,13 +411,17 @@ function clearCanvas() {
 	context.fillRect(0, 0, main.width, main.height);
 }
 
-function drawShape(shape, { isSelectable } = {}) {
+function drawShape(shape, { isSelectable, isTemporary } = {}) {
 	if (shape.type === 'line') {
 		if (isSelectable) {
-			drawLine({ ...shape, transparency: 0.3 });
+			drawLine({
+				...shape,
+				transparency: 0.3,
+				...(isTemporary && { color: 'green' }),
+			});
 			return;
 		}
-		drawLine(shape);
+		drawLine({ ...shape, ...(isTemporary && { color: 'green' }) });
 		return;
 	}
 	if (shape.type === 'token') {
