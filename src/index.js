@@ -127,24 +127,15 @@ function handleClickAt(x, y) {
 		renderScene();
 		return;
 	}
-	if (
-		activeMode === 'select' &&
-		selectedShape &&
-		doesPointTouchShape({ x, y }, selectedShape)
-	) {
-		handleStartMoveShape(x, y, selectedShape);
-		return;
-	}
 	if (activeMode === 'select') {
 		// If there is a line at these coords, make it selected
 		const touchedShape = currentScene.find(shape =>
 			doesPointTouchShape({ x, y }, shape)
 		);
 		if (touchedShape) {
+			isDrawing = true;
 			selectedShape = touchedShape;
 			console.log('selecting shape', touchedShape);
-			// TODO: do this only if we do not release immediately
-			// handleStartMoveShape(x, y, touchedShape);
 			renderScene();
 		}
 		return;
@@ -257,13 +248,11 @@ function handleMoveMouseAt(x, y) {
 		return;
 	}
 	if (activeMode === 'select' && selectedShape) {
-		// TODO: generalize to other shapes
-		addAction({
-			type: 'token',
+		addTemporaryAction({
+			type: 'start-move',
 			x,
 			y,
-			radius: 30,
-			temporary: true,
+			shape: selectedShape,
 		});
 		renderScene();
 		return;
@@ -285,9 +274,9 @@ function handleReleaseMouseAt(x, y) {
 	if (!isDrawing) {
 		return;
 	}
+	isDrawing = false;
 	clearTemporaryActions();
 	if (activeMode === 'line') {
-		isDrawing = false;
 		console.log('finishing line');
 		addAction({
 			type: 'finish-line',
@@ -301,16 +290,14 @@ function handleReleaseMouseAt(x, y) {
 		return;
 	}
 	if (activeMode === 'token') {
-		isDrawing = false;
 		console.log('finishing token');
 		addAction({ type: 'token', x, y, radius: 30, color: 'black' });
 		renderScene();
 		return;
 	}
 	if (activeMode === 'select' && selectedShape) {
-		isDrawing = false;
 		console.log('finishing token move');
-		addAction({ type: 'token', x, y, radius: 30, color: 'black' });
+		addAction({ type: 'finish-move', x, y, shape: selectedShape });
 		renderScene();
 		return;
 	}
@@ -368,6 +355,18 @@ function applyAction(drawCommands, action) {
 	if (action.type === 'finish-line') {
 		return [...drawCommands, { ...action, type: 'line' }];
 	}
+	if (action.type === 'drawing-token') {
+		return [
+			...drawCommands.filter(prev => !prev.temporary),
+			{ ...action, type: 'token', temporary: true },
+		];
+	}
+	if (action.type === 'start-move') {
+		return [
+			...drawCommands.filter(prev => !prev.temporary),
+			moveShapeTo({ ...action.shape, temporary: true }, action.x, action.y),
+		];
+	}
 	if (action.type === 'line' || action.type === 'token') {
 		return [...drawCommands, action];
 	}
@@ -376,7 +375,19 @@ function applyAction(drawCommands, action) {
 			areShapesSame(prev, action.shape) ? false : true
 		);
 	}
+	if (action.type === 'finish-move') {
+		return [...drawCommands, moveShapeTo(action.shape, action.x, action.y)];
+	}
 	return drawCommands;
+}
+
+function moveShapeTo(shape, x, y) {
+	if (shape.type === 'token') {
+		return { ...shape, x, y };
+	}
+	if (shape.type === 'line') {
+		return { ...shape, x1: x, y1: y };
+	}
 }
 
 function addAction(action) {
