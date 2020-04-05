@@ -142,25 +142,6 @@ function handleClickAt(x, y) {
 	}
 }
 
-function handleStartMoveShape(x, y, shape) {
-	// Move selected shape
-	// TODO: generalize to other shapes
-	if (shape.type === 'token') {
-		console.log('moving shape');
-		isDrawing = true;
-		removeSelected();
-		addAction({
-			type: 'token',
-			x,
-			y,
-			radius: 30,
-			temporary: true,
-		});
-		renderScene();
-		return;
-	}
-}
-
 function areShapesSame(shape1, shape2) {
 	if (!shape1 || !shape2) {
 		return false;
@@ -249,7 +230,7 @@ function handleMoveMouseAt(x, y) {
 	}
 	if (activeMode === 'select' && selectedShape) {
 		addTemporaryAction({
-			type: 'start-move',
+			type: 'move-in-progress',
 			x,
 			y,
 			shape: selectedShape,
@@ -310,9 +291,9 @@ function renderScene() {
 	clearCanvas();
 	drawGrid();
 	const modifiedHistory = actionHistory.reduce(applyActionToActions, []);
-	currentScene = modifiedHistory.reduce(applyAction, []).filter(x => x);
-	const temporaryScene = temporaryActionHistory
-		.reduce(applyAction, [])
+	currentScene = modifiedHistory.reduce(applyAction, []);
+	currentScene = temporaryActionHistory
+		.reduce(applyAction, currentScene)
 		.filter(x => x);
 	console.log(
 		'rendering scene',
@@ -323,7 +304,6 @@ function renderScene() {
 		actionHistory
 	);
 	currentScene.map(renderDrawCommand);
-	temporaryScene.map(renderDrawCommand);
 }
 
 /**
@@ -361,9 +341,11 @@ function applyAction(drawCommands, action) {
 			{ ...action, type: 'token', temporary: true },
 		];
 	}
-	if (action.type === 'start-move') {
+	if (action.type === 'move-in-progress') {
 		return [
-			...drawCommands.filter(prev => !prev.temporary),
+			...drawCommands
+				.filter(prev => !prev.temporary)
+				.filter(prev => (areShapesSame(prev, action.shape) ? false : true)),
 			moveShapeTo({ ...action.shape, temporary: true }, action.x, action.y),
 		];
 	}
@@ -376,7 +358,12 @@ function applyAction(drawCommands, action) {
 		);
 	}
 	if (action.type === 'finish-move') {
-		return [...drawCommands, moveShapeTo(action.shape, action.x, action.y)];
+		return [
+			...drawCommands
+				.filter(prev => !prev.temporary)
+				.filter(prev => (areShapesSame(prev, action.shape) ? false : true)),
+			moveShapeTo({ ...action.shape }, action.x, action.y),
+		];
 	}
 	return drawCommands;
 }
