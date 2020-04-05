@@ -277,6 +277,11 @@ function handleReleaseMouseAt(x, y) {
 		return;
 	}
 	if (activeMode === 'select' && selectedShape) {
+		if (areShapesSame(selectedShape, moveShapeTo({ ...selectedShape }, x, y))) {
+			console.log('no actual movement');
+			renderScene();
+			return;
+		}
 		console.log('finishing token move');
 		addAction({ type: 'finish-move', x, y, shape: selectedShape });
 		renderScene();
