@@ -229,6 +229,11 @@ function handleMoveMouseAt(x, y) {
 		return;
 	}
 	if (activeMode === 'select' && selectedShape) {
+		if (selectedShape.type !== 'token') {
+			// TODO: support moving lines
+			renderScene();
+			return;
+		}
 		addTemporaryAction({
 			type: 'move-in-progress',
 			x,
@@ -277,13 +282,18 @@ function handleReleaseMouseAt(x, y) {
 		return;
 	}
 	if (activeMode === 'select' && selectedShape) {
+		if (selectedShape.type !== 'token') {
+			// TODO: support moving lines
+			renderScene();
+			return;
+		}
 		if (areShapesSame(selectedShape, moveShapeTo({ ...selectedShape }, x, y))) {
 			console.log('no actual movement');
 			renderScene();
 			return;
 		}
 		console.log('finishing token move');
-		addAction({ type: 'finish-move', x, y, shape: selectedShape });
+		addAction({ type: 'move-complete', x, y, shape: selectedShape });
 		renderScene();
 		return;
 	}
@@ -362,7 +372,7 @@ function applyAction(drawCommands, action) {
 			areShapesSame(prev, action.shape) ? false : true
 		);
 	}
-	if (action.type === 'finish-move') {
+	if (action.type === 'move-complete') {
 		return [
 			...drawCommands
 				.filter(prev => !prev.temporary)
