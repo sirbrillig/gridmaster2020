@@ -1,4 +1,4 @@
-import { drawGrid, drawShape } from './drawing';
+import { drawGrid, drawShape, clearCanvas } from './drawing';
 
 const app = document.querySelector('#app');
 const main = document.createElement('canvas');
@@ -305,7 +305,7 @@ function renderScene() {
 	setCursorTo(
 		activeMode === 'select' ? (isDrawing ? 'grabbing' : 'grab') : 'auto'
 	);
-	clearCanvas();
+	clearCanvas(context, main);
 	drawGrid(context, main);
 	const modifiedHistory = actionHistory.reduce(applyActionToActions, []);
 	currentScene = modifiedHistory.reduce(applyAction, []);
@@ -416,11 +416,6 @@ function renderDrawCommand(drawCommand) {
 		isTemporary: drawCommand.temporary,
 		isSelected: areShapesSame(selectedShape, drawCommand),
 	});
-}
-
-function clearCanvas() {
-	context.fillStyle = 'white';
-	context.fillRect(0, 0, main.width, main.height);
 }
 
 function setCursorTo(type) {

@@ -83,3 +83,8 @@ export function drawGrid(context, canvas) {
 		y2 = y1;
 	}
 }
+
+export function clearCanvas(context, canvas) {
+	context.fillStyle = 'white';
+	context.fillRect(0, 0, canvas.width, canvas.height);
+}
