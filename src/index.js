@@ -1,3 +1,5 @@
+import { drawGrid, drawShape } from './drawing';
+
 const app = document.querySelector('#app');
 const main = document.createElement('canvas');
 main.width = 1120;
@@ -304,7 +306,7 @@ function renderScene() {
 		activeMode === 'select' ? (isDrawing ? 'grabbing' : 'grab') : 'auto'
 	);
 	clearCanvas();
-	drawGrid();
+	drawGrid(context, main);
 	const modifiedHistory = actionHistory.reduce(applyActionToActions, []);
 	currentScene = modifiedHistory.reduce(applyAction, []);
 	currentScene = temporaryActionHistory
@@ -410,7 +412,7 @@ function clearTemporaryActions() {
 }
 
 function renderDrawCommand(drawCommand) {
-	drawShape(drawCommand, {
+	drawShape(context, drawCommand, {
 		isTemporary: drawCommand.temporary,
 		isSelected: areShapesSame(selectedShape, drawCommand),
 	});
@@ -419,92 +421,6 @@ function renderDrawCommand(drawCommand) {
 function clearCanvas() {
 	context.fillStyle = 'white';
 	context.fillRect(0, 0, main.width, main.height);
-}
-
-function drawShape(shape, { isTemporary, isSelected } = {}) {
-	if (shape.type === 'line') {
-		drawLine({
-			...shape,
-			dashed: isTemporary,
-			...(isSelected && { color: 'green' }),
-		});
-		return;
-	}
-	if (shape.type === 'token') {
-		drawCircle({
-			...shape,
-			dashed: isTemporary,
-			...(isSelected && { color: 'green' }),
-		});
-		return;
-	}
-}
-
-function drawCircle({
-	x,
-	y,
-	radius,
-	color = 'black',
-	transparency = 1,
-	dashed = false,
-}) {
-	context.save();
-	context.beginPath();
-	context.arc(x, y, radius, 0, Math.PI * 2);
-	context.setLineDash(dashed ? [10, 3] : []);
-	context.fillStyle = color;
-	context.strokeStyle = color;
-	context.globalAlpha = transparency;
-	if (dashed) {
-		context.stroke();
-	} else {
-		context.fill();
-	}
-	context.restore();
-}
-
-function drawLine({
-	x1,
-	y1,
-	x2,
-	y2,
-	color = 'black',
-	width = 1,
-	transparency = 1,
-	dashed = false,
-}) {
-	context.save();
-	context.beginPath();
-	context.strokeStyle = color;
-	context.lineWidth = width;
-	context.globalAlpha = transparency;
-	context.setLineDash(dashed ? [10, 3] : []);
-	context.moveTo(x1, y1);
-	context.lineTo(x2, y2);
-	context.stroke();
-	context.restore();
-}
-
-function drawGrid() {
-	const gridSpacing = 80;
-	let x1 = gridSpacing;
-	let y1 = 0;
-	let x2 = gridSpacing;
-	let y2 = main.height;
-	while (x1 <= main.width) {
-		drawLine({ type: 'grid', x1, y1, x2, y2, width: 1, color: '#ddd' });
-		x1 += gridSpacing;
-		x2 = x1;
-	}
-	x1 = 0;
-	y1 = gridSpacing;
-	x2 = main.width;
-	y2 = gridSpacing;
-	while (y1 <= main.height) {
-		drawLine({ type: 'grid', x1, y1, x2, y2, width: 1, color: '#ddd' });
-		y1 += gridSpacing;
-		y2 = y1;
-	}
 }
 
 function setCursorTo(type) {
@@ -528,7 +444,7 @@ function init() {
 
 	document.addEventListener('keydown', event => handleKeyPress(event));
 
-	drawGrid();
+	drawGrid(context, main);
 }
 
 init();
