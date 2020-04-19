@@ -28,6 +28,7 @@ const tokenToolLabel = document.createElement('label');
 tokenToolLabel.htmlFor = 'token-tool-button';
 tokenToolLabel.innerText = 'Token';
 const toolOptionsPanel = document.createElement('section');
+toolOptionsPanel.style.height = '40px';
 const lineThicknessControl = document.createElement('input');
 lineThicknessControl.id = 'line-thickness-control';
 lineThicknessControl.type = 'number';
@@ -38,8 +39,6 @@ lineThicknessControlLabel.htmlFor = 'line-thickness-control';
 
 app.appendChild(toolPanel);
 app.appendChild(toolOptionsPanel);
-toolOptionsPanel.appendChild(lineThicknessControlLabel);
-toolOptionsPanel.appendChild(lineThicknessControl);
 toolPanel.appendChild(selectToolLabel);
 toolPanel.appendChild(selectToolButton);
 toolPanel.appendChild(lineToolLabel);
@@ -95,14 +94,32 @@ function changeModeTo(mode) {
 	switch (activeMode) {
 		case 'select':
 			selectToolButton.checked = true;
+			activateSelectMode();
 			break;
 		case 'line':
 			lineToolButton.checked = true;
+			activateLineMode();
 			break;
 		case 'token':
 			tokenToolButton.checked = true;
+			activateTokenMode();
 			break;
 	}
+}
+
+function activateLineMode() {
+	toolOptionsPanel.innerHTML = '';
+	lineThicknessControl.value = lineThickness;
+	toolOptionsPanel.appendChild(lineThicknessControlLabel);
+	toolOptionsPanel.appendChild(lineThicknessControl);
+}
+
+function activateTokenMode() {
+	toolOptionsPanel.innerHTML = '';
+}
+
+function activateSelectMode() {
+	toolOptionsPanel.innerHTML = '';
 }
 
 function handleKeyPress(event) {
@@ -516,7 +533,9 @@ function init() {
 	lineToolButton.addEventListener('click', () => changeModeTo('line'));
 	tokenToolButton.addEventListener('click', () => changeModeTo('token'));
 
-	lineThicknessControl.addEventListener('change', (event) => setLineThickness(event.target.value));
+	lineThicknessControl.addEventListener('change', (event) =>
+		setLineThickness(event.target.value)
+	);
 
 	document.addEventListener('keydown', (event) => handleKeyPress(event));
 
@@ -524,3 +543,4 @@ function init() {
 }
 
 init();
+changeModeTo('line');
