@@ -172,7 +172,7 @@ function handleClickAt(x, y) {
 	}
 	if (activeMode === 'select') {
 		// If there is a line at these coords, make it selected
-		const touchedShape = currentScene.find(shape =>
+		const touchedShape = currentScene.find((shape) =>
 			doesPointTouchShape({ x, y }, shape)
 		);
 		if (touchedShape) {
@@ -295,7 +295,7 @@ function handleCancelDraw() {
 	console.log('cancelling draw');
 	isDrawing = false;
 	clearTemporaryActions();
-	actionHistory = actionHistory.filter(action => !action.temporary);
+	actionHistory = actionHistory.filter((action) => !action.temporary);
 	renderScene();
 }
 
@@ -352,7 +352,7 @@ function renderScene() {
 	currentScene = modifiedHistory.reduce(applyAction, []);
 	currentScene = temporaryActionHistory
 		.reduce(applyAction, currentScene)
-		.filter(x => x);
+		.filter((x) => x);
 	console.log(
 		'rendering scene',
 		currentScene,
@@ -386,7 +386,7 @@ function applyActionToActions(prevActions, action) {
 function applyAction(drawCommands, action) {
 	if (action.type === 'drawing-line') {
 		return [
-			...drawCommands.filter(prev => !prev.temporary),
+			...drawCommands.filter((prev) => !prev.temporary),
 			{ ...action, type: 'line', temporary: true },
 		];
 	}
@@ -395,15 +395,15 @@ function applyAction(drawCommands, action) {
 	}
 	if (action.type === 'drawing-token') {
 		return [
-			...drawCommands.filter(prev => !prev.temporary),
+			...drawCommands.filter((prev) => !prev.temporary),
 			{ ...action, type: 'token', temporary: true },
 		];
 	}
 	if (action.type === 'move-in-progress') {
 		return [
 			...drawCommands
-				.filter(prev => !prev.temporary)
-				.filter(prev => (areShapesSame(prev, action.shape) ? false : true)),
+				.filter((prev) => !prev.temporary)
+				.filter((prev) => (areShapesSame(prev, action.shape) ? false : true)),
 			moveShapeTo({ ...action.shape, temporary: true }, action.x, action.y),
 		];
 	}
@@ -411,15 +411,15 @@ function applyAction(drawCommands, action) {
 		return [...drawCommands, action];
 	}
 	if (action.type === 'delete') {
-		return drawCommands.filter(prev =>
+		return drawCommands.filter((prev) =>
 			areShapesSame(prev, action.shape) ? false : true
 		);
 	}
 	if (action.type === 'move-complete') {
 		return [
 			...drawCommands
-				.filter(prev => !prev.temporary)
-				.filter(prev => (areShapesSame(prev, action.shape) ? false : true)),
+				.filter((prev) => !prev.temporary)
+				.filter((prev) => (areShapesSame(prev, action.shape) ? false : true)),
 			moveShapeTo({ ...action.shape }, action.x, action.y),
 		];
 	}
@@ -438,7 +438,7 @@ function moveShapeTo(shape, x, y) {
 function addAction(action) {
 	console.log('adding action', action);
 	actionHistory = [
-		...actionHistory.filter(action => !action.temporary),
+		...actionHistory.filter((action) => !action.temporary),
 		action,
 	];
 }
@@ -464,17 +464,17 @@ function setCursorTo(type) {
 }
 
 function init() {
-	main.addEventListener('mousedown', event =>
+	main.addEventListener('mousedown', (event) =>
 		handleClickAt(...getMouseCoordsInCanvas(event))
 	);
 
 	main.addEventListener('mouseout', () => handleCancelDraw());
 
-	main.addEventListener('mousemove', event =>
+	main.addEventListener('mousemove', (event) =>
 		handleMoveMouseAt(...getMouseCoordsInCanvas(event))
 	);
 
-	main.addEventListener('mouseup', event =>
+	main.addEventListener('mouseup', (event) =>
 		handleReleaseMouseAt(...getMouseCoordsInCanvas(event))
 	);
 
