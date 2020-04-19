@@ -1,9 +1,39 @@
 import { drawGrid, drawShape, clearCanvas } from './drawing';
 
 const app = document.querySelector('#app');
+const toolPanel = document.createElement('section');
 const main = document.createElement('canvas');
 main.width = 1120;
 main.height = 1000;
+const selectToolButton = document.createElement('input');
+selectToolButton.type = 'radio';
+selectToolButton.name = 'activeTool';
+selectToolButton.id = 'select-tool-button';
+const selectToolLabel = document.createElement('label');
+selectToolLabel.htmlFor = 'select-tool-button';
+selectToolLabel.innerText = 'Select';
+const lineToolButton = document.createElement('input');
+lineToolButton.type = 'radio';
+lineToolButton.name = 'activeTool';
+lineToolButton.id = 'line-tool-button';
+lineToolButton.checked = true;
+const lineToolLabel = document.createElement('label');
+lineToolLabel.htmlFor = 'line-tool-button';
+lineToolLabel.innerText = 'Line';
+const tokenToolButton = document.createElement('input');
+tokenToolButton.type = 'radio';
+tokenToolButton.name = 'activeTool';
+tokenToolButton.id = 'token-tool-button';
+const tokenToolLabel = document.createElement('label');
+tokenToolLabel.htmlFor = 'token-tool-button';
+tokenToolLabel.innerText = 'Token';
+app.appendChild(toolPanel);
+toolPanel.appendChild(selectToolLabel);
+toolPanel.appendChild(selectToolButton);
+toolPanel.appendChild(lineToolLabel);
+toolPanel.appendChild(lineToolButton);
+toolPanel.appendChild(tokenToolLabel);
+toolPanel.appendChild(tokenToolButton);
 app.appendChild(main);
 
 const context = main.getContext('2d');
@@ -49,6 +79,17 @@ function changeModeTo(mode) {
 	previousMode = activeMode;
 	activeMode = mode;
 	selectedShape = null;
+	switch (activeMode) {
+		case 'select':
+			selectToolButton.checked = true;
+			break;
+		case 'line':
+			lineToolButton.checked = true;
+			break;
+		case 'token':
+			tokenToolButton.checked = true;
+			break;
+	}
 }
 
 function handleKeyPress(event) {
@@ -437,7 +478,11 @@ function init() {
 		handleReleaseMouseAt(...getMouseCoordsInCanvas(event))
 	);
 
-	document.addEventListener('keydown', event => handleKeyPress(event));
+	selectToolButton.addEventListener('click', () => changeModeTo('select'));
+	lineToolButton.addEventListener('click', () => changeModeTo('line'));
+	tokenToolButton.addEventListener('click', () => changeModeTo('token'));
+
+	document.addEventListener('keydown', (event) => handleKeyPress(event));
 
 	drawGrid(context, main);
 }
