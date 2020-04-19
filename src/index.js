@@ -27,7 +27,19 @@ tokenToolButton.id = 'token-tool-button';
 const tokenToolLabel = document.createElement('label');
 tokenToolLabel.htmlFor = 'token-tool-button';
 tokenToolLabel.innerText = 'Token';
+const toolOptionsPanel = document.createElement('section');
+const lineThicknessControl = document.createElement('input');
+lineThicknessControl.id = 'line-thickness-control';
+lineThicknessControl.type = 'number';
+lineThicknessControl.value = 3;
+const lineThicknessControlLabel = document.createElement('label');
+lineThicknessControlLabel.innerText = 'Thickness';
+lineThicknessControlLabel.htmlFor = 'line-thickness-control';
+
 app.appendChild(toolPanel);
+app.appendChild(toolOptionsPanel);
+toolOptionsPanel.appendChild(lineThicknessControlLabel);
+toolOptionsPanel.appendChild(lineThicknessControl);
 toolPanel.appendChild(selectToolLabel);
 toolPanel.appendChild(selectToolButton);
 toolPanel.appendChild(lineToolLabel);
@@ -46,6 +58,7 @@ let temporaryActionHistory = [];
 let activeMode = 'line';
 let previousMode = 'line';
 let currentScene = [];
+let lineThickness = 3;
 
 function getScrollOffsetLeft() {
 	let element = main;
@@ -127,12 +140,33 @@ function handleKeyPress(event) {
 		renderScene();
 		return;
 	}
+	if (event.key === ']' && activeMode === 'line') {
+		setLineThickness(lineThickness + 1);
+		event.preventDefault();
+		return;
+	}
+	if (event.key === '[' && activeMode === 'line') {
+		setLineThickness(lineThickness - 1);
+		event.preventDefault();
+		return;
+	}
 	if (event.key === 'Backspace' && activeMode === 'select') {
 		event.preventDefault();
 		removeSelected();
 		renderScene();
 		return;
 	}
+}
+
+function setLineThickness(value) {
+	if (value <= 1) {
+		value = 1;
+	}
+	if (value >= 10) {
+		value = 10;
+	}
+	lineThickness = value;
+	lineThicknessControl.value = value;
 }
 
 function undoLastAction() {
@@ -255,7 +289,7 @@ function handleMoveMouseAt(x, y) {
 			y1: lineY,
 			x2: x,
 			y2: y,
-			width: 3,
+			width: lineThickness,
 		});
 		renderScene();
 		return;
@@ -313,7 +347,7 @@ function handleReleaseMouseAt(x, y) {
 			y1: lineY,
 			x2: x,
 			y2: y,
-			width: 3,
+			width: lineThickness,
 		});
 		renderScene();
 		return;
@@ -481,6 +515,8 @@ function init() {
 	selectToolButton.addEventListener('click', () => changeModeTo('select'));
 	lineToolButton.addEventListener('click', () => changeModeTo('line'));
 	tokenToolButton.addEventListener('click', () => changeModeTo('token'));
+
+	lineThicknessControl.addEventListener('change', (event) => setLineThickness(event.target.value));
 
 	document.addEventListener('keydown', (event) => handleKeyPress(event));
 
